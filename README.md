@@ -5,6 +5,39 @@ This example shows how to run Let's Encrypt's `certbot` with Go's `ListenAndServ
 Note, this method requires `certbot` to be installed with its dependencies such as Python.
 It also requires the daemon the be restarted at least monthly after running `certbot`.
 
+# Running Example
+
+Build or Install your binary
+
+```
+go install
+```
+
+Run as root via `sudo`, but ideally you would use runit/upstart/systemd to
+automatically restart daemons and use `setcap` to start as a non privileged
+user (required as this example binds to port 80 and 443)
+
+```
+sudo ./lets-encrypt-example -domain example.com -webroot /home/user/go/src/github.com/bradleyfalzon/lets-encrypt-example
+```
+
+Upon running this for the first time, the `ListenAndServeTLS` will fail due to
+non existent certificates, this is OK and expected on the first run.
+
+Next step is the run `certbot`, which will communicate with Let's Encrypt, and
+then place a randomly generated key inside `.well-known/acme-challenge/random-key.txt`
+which Let's Encrypt will then fetch by accessing <http://example.com/.well-known/acme-challenge/random-key.txt>.
+
+```
+certbot-auto --renew-by-default certonly --webroot -w /home/user/go/src/github.com/bradleyfalzon/lets-encrypt-example -d example.com
+```
+
+If this is the first time you've ran `certbot` you will be asked for your email
+address and must agree to the Terms of Service.
+
+Once a certificate has been successfully obtained, restart the `lets-encrypt-example` to use the new certificates.
+
+
 # Other Approaches
 
 ## Certbot Alternatives
@@ -37,35 +70,3 @@ and the web servers or load balancers proxy all requires to `.well-known/acme-ch
 to this dedicated server. This server can then generate the certificates once and
 you can use your existing configuration management tools to push these certificates
 to your web servers or load balancers and reload the relevant daemons (if required).
-
-# Running Example
-
-Build or Install your binary
-
-```
-go install
-```
-
-Run as root via `sudo`, but ideally you would use runit/upstart/systemd to
-automatically restart daemons and use `setcap` to start as a non privileged
-user (required as this example binds to port 80 and 443)
-
-```
-sudo ./lets-encrypt-example -domain example.com -webroot /home/user/go/src/github.com/bradleyfalzon/lets-encrypt-example
-```
-
-Upon running this for the first time, the `ListenAndServeTLS` will fail due to
-non existent certificates, this is OK and expected on the first run.
-
-Next step is the run `certbot`, which will communicate with Let's Encrypt, and
-then place a randomly generated key inside `.well-known/acme-challenge/random-key.txt`
-which Let's Encrypt will then fetch by accessing <http://example.com/.well-known/acme-challenge/random-key.txt>.
-
-```
-certbot-auto --renew-by-default certonly --webroot -w /home/user/go/src/github.com/bradleyfalzon/lets-encrypt-example -d example.com
-```
-
-If this is the first time you've ran `certbot` you will be asked for your email
-address and must agree to the Terms of Service.
-
-Once a certificate has been successfully obtained, restart the `lets-encrypt-example` to use the new certificates.
