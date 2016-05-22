@@ -37,8 +37,37 @@ address and must agree to the Terms of Service.
 
 Once a certificate has been successfully obtained, restart the `lets-encrypt-example` to use the new certificates.
 
+# Renewing
+
+Once an initial certificate has been provided, it will expire within 90 days, you must regularly run the same
+`certbot-auto` command to renew the certificates, but you can run this every 30 days to ensure the certificate stays
+current.
+
+Because our implementation loads the certificate and keeps it in memory, the Go application will also need to be restart
+after renewal of the certificates. If you're using `systemd` to manage your application, a `cron` entry may look like:
+
+```
+0 0 1 * * root /path/to/certbot-auto --renew-by-default certonly --webroot -w
+/home/user/go/src/github.com/bradleyfalzon/lets-encrypt-example -d example.com && systemctl restart go-application
+```
+
+The above is the correct syntax for the system `cron` at `/etc/crontab`, make sure to substitute the various parameters to
+meet your environment.
 
 # Other Approaches
+
+## Certbot Standalone Mode
+
+The example application runs a web server on port 80 and serves content for `.well-known/acme-challenge`, but this step
+can be achieved via certbot's standalone mode. To use this mode, you would simply run `certbot-auto --renew-by-default
+standalone` to listen on port 80, which would serve the correct directories and renew the certificates, then start the Go
+application.
+
+The problem with this mode is that it requires either that your Go application never listens on port 80 (therefore
+doesn't redirect requests from HTTP to HTTPS and still requires a restart to use the renewed certificates) or it requires you
+stop your Go application whilst the renewal occurs, so it can listen on port 80.
+
+It's for the above reasons I chose not to suggest this method, but this method maybe suitable for you.
 
 ## Certbot Alternatives
 
